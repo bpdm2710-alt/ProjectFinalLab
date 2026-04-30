@@ -62,6 +62,8 @@ public class GameController {
     }
 
     public void start() {
+        SoundManager.getInstance().stopGameOverMusic();
+        SoundManager.getInstance().startBackgroundMusic();
         state.setState(GameState.State.PLAYING);
         dropTimer.start();
     }
@@ -83,6 +85,8 @@ public class GameController {
         
         if (board.isGameOver(current)) {
             state.setState(GameState.State.GAME_OVER);
+            SoundManager.getInstance().stopBackgroundMusic();
+            SoundManager.getInstance().startGameOverMusic();
             stop();
         }
         // [THÊM DÒNG NÀY] Báo cho SidebarPanel vẽ lại ô Next Piece
@@ -201,7 +205,32 @@ public class GameController {
             spawnNext(); start();
             return;
         }
+        if (keyCode == KeyEvent.VK_M) {
+            SoundManager.getInstance().toggleBackgroundMusicMute();
+            return;
+        }
+        if (keyCode == KeyEvent.VK_N) {
+            SoundManager.getInstance().toggleSfxMute();
+            return;
+        }
+        if (keyCode == KeyEvent.VK_F8) {
+            SoundManager.getInstance().changeBackgroundMusicVolume(2.0f);
+            return;
+        }
+        if (keyCode == KeyEvent.VK_F7) {
+            SoundManager.getInstance().changeBackgroundMusicVolume(-2.0f);
+            return;
+        }
+        if (keyCode == KeyEvent.VK_F6) {
+            SoundManager.getInstance().changeSfxVolume(2.0f);
+            return;
+        }
+        if (keyCode == KeyEvent.VK_F5) {
+            SoundManager.getInstance().changeSfxVolume(-2.0f);
+            return;
+        }
         if (keyCode == KeyEvent.VK_P) { state.togglePause(); return; }
+        if (keyCode == KeyEvent.VK_T) { switchTheme(); return; }
         if (state.getCurrentState() != GameState.State.PLAYING) return;
 
         Tetromino probe = current.copy();
@@ -283,6 +312,15 @@ public class GameController {
             state.notifyChanged();
         }
         holdUsed = true;
+    }
+
+    private void switchTheme() {
+        ThemeManager.Theme[] themes = ThemeManager.Theme.values();
+        ThemeManager.Theme current = ThemeManager.getCurrentTheme();
+        int nextIndex = (current.ordinal() + 1) % themes.length;
+        ThemeManager.setTheme(themes[nextIndex]);
+        SoundManager.getInstance().play(SoundManager.MOVE);
+        state.notifyChanged(); // Báo cho UI repaint với theme mới
     }
 
     // ============================================================

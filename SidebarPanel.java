@@ -26,7 +26,8 @@ public class SidebarPanel extends JPanel {
         this.factory    = factory;
 
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
-        setBackground(new Color(20, 20, 20));
+        ThemeManager.ThemePalette palette = ThemeManager.getPalette();
+        setBackground(palette.sidebarBackground);
 
         // Observer — tự repaint khi score/level thay đổi
         state.addListener(this::repaint);
@@ -53,20 +54,21 @@ public class SidebarPanel extends JPanel {
     // ============================================================
     private int drawStats(Graphics2D g2, int startY) {
         int y = startY;
-        y = drawLabel(g2, "SCORE",  String.valueOf(state.getScore()),  y);
-        y = drawLabel(g2, "LEVEL",  String.valueOf(state.getLevel()),  y + 10);
-        y = drawLabel(g2, "LINES",  String.valueOf(state.getLinesCleared()), y + 10);
+        ThemeManager.ThemePalette palette = ThemeManager.getPalette();
+        y = drawLabel(g2, "SCORE",  String.valueOf(state.getScore()),  y, palette);
+        y = drawLabel(g2, "LEVEL",  String.valueOf(state.getLevel()),  y + 10, palette);
+        y = drawLabel(g2, "LINES",  String.valueOf(state.getLinesCleared()), y + 10, palette);
         return y;
     }
 
-    private int drawLabel(Graphics2D g2, String title, String value, int y) {
+    private int drawLabel(Graphics2D g2, String title, String value, int y, ThemeManager.ThemePalette palette) {
         // Title
-        g2.setColor(new Color(160, 160, 160));
+        g2.setColor(palette.textSecondary);
         g2.setFont(new Font("Monospaced", Font.PLAIN, 12));
         g2.drawString(title, PADDING, y);
 
         // Value
-        g2.setColor(Color.WHITE);
+        g2.setColor(palette.text);
         g2.setFont(new Font("Monospaced", Font.BOLD, 22));
         g2.drawString(value, PADDING, y + 26);
 
@@ -103,12 +105,13 @@ public class SidebarPanel extends JPanel {
     // HELPERS
     // ============================================================
     private void drawSectionTitle(Graphics2D g2, String title, int y) {
-        g2.setColor(new Color(160, 160, 160));
+        ThemeManager.ThemePalette palette = ThemeManager.getPalette();
+        g2.setColor(palette.textSecondary);
         g2.setFont(new Font("Monospaced", Font.PLAIN, 12));
         g2.drawString(title, PADDING, y);
 
         // Underline
-        g2.setColor(new Color(80, 80, 80));
+        g2.setColor(palette.grid);
         g2.drawLine(PADDING, y + 4, WIDTH - PADDING, y + 4);
     }
 

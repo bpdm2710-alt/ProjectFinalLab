@@ -4,14 +4,28 @@ import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class Main {
 
     private static void applyWindowBounds(JFrame frame, Rectangle bounds, Dimension minimumSize) {
-        int width = Math.max(bounds.width, minimumSize.width);
-        int height = Math.max(bounds.height, minimumSize.height);
+    Rectangle screenBounds = GraphicsEnvironment
+        .getLocalGraphicsEnvironment()
+        .getMaximumWindowBounds();
+
+    int width = Math.max(bounds.width, minimumSize.width);
+    int height = Math.max(bounds.height, minimumSize.height);
+    width = Math.min(width, screenBounds.width);
+    height = Math.min(height, screenBounds.height);
+
+    int maxX = screenBounds.x + screenBounds.width - width;
+    int maxY = screenBounds.y + screenBounds.height - height;
+    int x = Math.max(screenBounds.x, Math.min(bounds.x, maxX));
+    int y = Math.max(screenBounds.y, Math.min(bounds.y, maxY));
+
         frame.setSize(width, height);
-        frame.setLocation(bounds.x, bounds.y);
+    frame.setLocation(x, y);
     }
 
     public static void main(String[] args) {
@@ -41,6 +55,14 @@ public class Main {
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
 
+            SoundManager.getInstance().startBackgroundMusic();
+            frame.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    SoundManager.getInstance().stopBackgroundMusic();
+                }
+            });
+
             final Rectangle[] restoreBounds = { frame.getBounds() };
             final boolean[] fullscreen = { false };
             final GraphicsDevice screenDevice = GraphicsEnvironment
@@ -65,6 +87,7 @@ public class Main {
                 screenDevice.setFullScreenWindow(null);
                 frame.dispose();
                 frame.setUndecorated(false);
+                frame.setExtendedState(JFrame.NORMAL);
                 applyWindowBounds(frame, restoreBounds[0], minimumSize);
                 frame.setVisible(true);
                 frame.revalidate();
