@@ -59,6 +59,55 @@ public class Board {
         }
     }
 
+    /**
+     * Thử xoay clockwise với SRS Wall Kick.
+     * Trả về Tetromino đã xoay+kick thành công, hoặc null nếu không thể xoay.
+     */
+    public Tetromino tryRotateCW(Tetromino t) {
+        return tryRotate(t, 1);
+    }
+
+    public Tetromino tryRotateCCW(Tetromino t) {
+        return tryRotate(t, -1); // -1 => +3 mod 4
+    }
+
+    public Tetromino tryRotate180(Tetromino t) {
+        // 180 = CW hai lần, dùng kick của bước đầu
+        Tetromino mid = tryRotate(t, 1);
+        if (mid == null) return null;
+        return tryRotate(mid, 1);
+    }
+
+    private Tetromino tryRotate(Tetromino t, int direction) {
+        Tetromino probe = t.copy();
+        if (direction == 1)       probe.rotateClockwise();
+        else if (direction == -1) probe.rotateCounterClockwise();
+
+        // Thử offset {0,0} trước
+        if (isValidPosition(probe)) return probe;
+
+        // Lấy kick data của trạng thái GỐC (trước khi xoay)
+        int fromRotation = t.getRotation();
+        // CCW: kick data theo chiều ngược — lấy từ rotation đích rồi đảo dấu
+        int kickIndex = (direction == 1)
+                ? fromRotation
+                : ((fromRotation + 3) % 4);
+
+        int[][][] kickData = t.getWallKickData();
+        if (kickData == null) return null; // Khối O
+
+        for (int[] offset : kickData[kickIndex]) {
+            int dx = (direction == 1) ? offset[0] : -offset[0];
+            int dy = (direction == 1) ? offset[1] : -offset[1];
+
+            Tetromino kicked = probe.copy();
+            kicked.setX(kicked.getX() + dx);
+            kicked.setY(kicked.getY() + dy);
+
+            if (isValidPosition(kicked)) return kicked;
+        }
+        return null; // Tất cả kick đều fail
+    }
     // ============================================================
     // CLEAR LINES — trả về số dòng đã xóa (dùng để tính điểm)
     // ============================================================

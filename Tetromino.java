@@ -68,6 +68,38 @@ public class Tetromino {
         new Color(240, 160,   0)  // L — orange
     };
 
+    // Wall Kick offsets theo SRS
+    // Mỗi transition (rotation -> rotation) có 4 offset cần thử (ngoài offset gốc {0,0})
+    // Index: [fromRotation][kick attempt] = {dx, dy}
+
+    // Dùng cho J, L, S, T, Z
+    public static final int[][][] WALL_KICK_JLSTZ = {
+        // 0->1
+        {{-1,0},{-1,-1},{0,2},{-1,2}},
+        // 1->2
+        {{1,0},{1,1},{0,-2},{1,-2}},
+        // 2->3
+        {{1,0},{1,-1},{0,2},{1,2}},
+        // 3->0
+        {{-1,0},{-1,1},{0,-2},{-1,-2}}
+    };
+
+    // Dùng riêng cho I
+    public static final int[][][] WALL_KICK_I = {
+        // 0->1
+        {{-2,0},{1,0},{-2,1},{1,-2}},
+        // 1->2
+        {{-1,0},{2,0},{-1,-2},{2,1}},
+        // 2->3
+        {{2,0},{-1,0},{2,-1},{-1,2}},
+        // 3->0
+        {{1,0},{-2,0},{1,2},{-2,-1}}
+    };
+
+    public int[][][] getWallKickData() {
+        return (type == 0) ? WALL_KICK_I : WALL_KICK_JLSTZ;
+    }
+
     // ============================================================
     // INSTANCE FIELDS
     // ============================================================

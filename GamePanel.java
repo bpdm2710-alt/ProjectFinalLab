@@ -52,6 +52,28 @@ public class GamePanel extends JPanel {
         renderTimer.start();
     }
 
+    private int getCellSize() {
+        int width = Math.max(1, getWidth());
+        int height = Math.max(1, getHeight());
+        return Math.max(1, Math.min(width / Board.COLS, height / Board.ROWS));
+    }
+
+    private int getBoardWidth() {
+        return getCellSize() * Board.COLS;
+    }
+
+    private int getBoardHeight() {
+        return getCellSize() * Board.ROWS;
+    }
+
+    private int getBoardOriginX() {
+        return Math.max(0, (getWidth() - getBoardWidth()) / 2);
+    }
+
+    private int getBoardOriginY() {
+        return Math.max(0, (getHeight() - getBoardHeight()) / 2);
+    }
+
     // ============================================================
     // RENDER
     // ============================================================
@@ -73,20 +95,27 @@ public class GamePanel extends JPanel {
     // DRAW METHODS
     // ============================================================
     private void drawGrid(Graphics2D g2) {
+        int cellSize = getCellSize();
+        int originX = getBoardOriginX();
+        int originY = getBoardOriginY();
+
         g2.setColor(new Color(40, 40, 40));
         for (int row = 0; row < Board.ROWS; row++) {
             for (int col = 0; col < Board.COLS; col++) {
-                g2.drawRect(col * CELL_SIZE, row * CELL_SIZE,
-                            CELL_SIZE, CELL_SIZE);
+                g2.drawRect(originX + col * cellSize, originY + row * cellSize,
+                            cellSize, cellSize);
             }
         }
     }
 
     private void drawBoard(Graphics2D g2) {
+        int cellSize = getCellSize();
+        int originX = getBoardOriginX();
+        int originY = getBoardOriginY();
         for (int row = 0; row < Board.ROWS; row++) {
             for (int col = 0; col < Board.COLS; col++) {
                 Color c = board.getCell(row, col);
-                if (c != null) drawCell(g2, col, row, c, 1.0f);
+                if (c != null) drawCell(g2, col, row, c, 1.0f, originX, originY, cellSize);
             }
         }
     }
@@ -101,6 +130,9 @@ public class GamePanel extends JPanel {
     }
 
     private void drawTetromino(Graphics2D g2, Tetromino t, float alpha) {
+        int cellSize = getCellSize();
+        int originX = getBoardOriginX();
+        int originY = getBoardOriginY();
         int[][] shape = t.getShape();
         for (int row = 0; row < shape.length; row++) {
             for (int col = 0; col < shape[row].length; col++) {
@@ -108,27 +140,28 @@ public class GamePanel extends JPanel {
                 int boardX = t.getX() + col;
                 int boardY = t.getY() + row;
                 if (boardY < 0) continue;
-                drawCell(g2, boardX, boardY, t.getColor(), alpha);
+                drawCell(g2, boardX, boardY, t.getColor(), alpha, originX, originY, cellSize);
             }
         }
     }
 
-    private void drawCell(Graphics2D g2, int col, int row, Color color, float alpha) {
+    private void drawCell(Graphics2D g2, int col, int row, Color color, float alpha,
+                          int originX, int originY, int cellSize) {
         AlphaComposite ac = AlphaComposite.getInstance(
                 AlphaComposite.SRC_OVER, alpha);
         g2.setComposite(ac);
 
         // Fill
         g2.setColor(color);
-        g2.fillRect(col * CELL_SIZE + 1, row * CELL_SIZE + 1,
-                    CELL_SIZE - 2, CELL_SIZE - 2);
+        g2.fillRect(originX + col * cellSize + 1, originY + row * cellSize + 1,
+                    cellSize - 2, cellSize - 2);
 
         // Highlight top-left edge
         g2.setColor(color.brighter());
-        g2.drawLine(col * CELL_SIZE + 1, row * CELL_SIZE + 1,
-                    col * CELL_SIZE + CELL_SIZE - 2, row * CELL_SIZE + 1);
-        g2.drawLine(col * CELL_SIZE + 1, row * CELL_SIZE + 1,
-                    col * CELL_SIZE + 1, row * CELL_SIZE + CELL_SIZE - 2);
+        g2.drawLine(originX + col * cellSize + 1, originY + row * cellSize + 1,
+                    originX + col * cellSize + cellSize - 2, originY + row * cellSize + 1);
+        g2.drawLine(originX + col * cellSize + 1, originY + row * cellSize + 1,
+                    originX + col * cellSize + 1, originY + row * cellSize + cellSize - 2);
 
         // Reset composite
         g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
@@ -136,11 +169,13 @@ public class GamePanel extends JPanel {
 
     private void drawOverlay(Graphics2D g2) {
         GameState.State s = state.getCurrentState();
+        int boardCenterX = getBoardOriginX() + getBoardWidth() / 2;
+        int boardCenterY = getBoardOriginY() + getBoardHeight() / 2;
         if (s == GameState.State.PAUSED) {
-            drawCenteredText(g2, "PAUSED", WIDTH / 2, HEIGHT / 2, 36);
+            drawCenteredText(g2, "PAUSED", boardCenterX, boardCenterY, 36);
         } else if (s == GameState.State.GAME_OVER) {
-            drawCenteredText(g2, "GAME OVER", WIDTH / 2, HEIGHT / 2 - 20, 36);
-            drawCenteredText(g2, "Press R to restart", WIDTH / 2, HEIGHT / 2 + 30, 18);
+            drawCenteredText(g2, "GAME OVER", boardCenterX, boardCenterY - 20, 36);
+            drawCenteredText(g2, "Press R to restart", boardCenterX, boardCenterY + 30, 18);
         }
     }
 

@@ -218,27 +218,29 @@ public class GameController {
                 if (!downPressed) { downPressed = true; lastSdfTime = now; moveDown(); }
             }
             case KeyEvent.VK_UP, KeyEvent.VK_X -> {
-                probe.rotateClockwise();
-                if (board.isValidPosition(probe)) { 
-                    current.rotateClockwise(); 
-                    SoundManager.getInstance().play(SoundManager.ROTATE); 
-                    resetLockDelay(); // Hồi lại 500ms
+                Tetromino rotated = board.tryRotateCW(current);
+                if (rotated != null) {
+                    current = rotated;
+                    SoundManager.getInstance().play(SoundManager.ROTATE);
+                    resetLockDelay();
                 }
             }
+
             case KeyEvent.VK_Z -> {
-                probe.rotateCounterClockwise();
-                if (board.isValidPosition(probe)) { 
-                    current.rotateCounterClockwise(); 
-                    SoundManager.getInstance().play(SoundManager.ROTATE); 
-                    resetLockDelay(); // Hồi lại 500ms
+                Tetromino rotated = board.tryRotateCCW(current);
+                if (rotated != null) {
+                    current = rotated;
+                    SoundManager.getInstance().play(SoundManager.ROTATE);
+                    resetLockDelay();
                 }
             }
+
             case KeyEvent.VK_A -> {
-                probe.rotate180();
-                if (board.isValidPosition(probe)) { 
-                    current.rotate180(); 
-                    SoundManager.getInstance().play(SoundManager.ROTATE); 
-                    resetLockDelay(); // Hồi lại 500ms Lock Delay
+                Tetromino rotated = board.tryRotate180(current);
+                if (rotated != null) {
+                    current = rotated;
+                    SoundManager.getInstance().play(SoundManager.ROTATE);
+                    resetLockDelay();
                 }
             }
             case KeyEvent.VK_SPACE -> {
