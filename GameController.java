@@ -1,33 +1,130 @@
-import java.awt.*;
+import javax.swing.Timer;
+import java.awt.event.KeyEvent;
+
 public class GameController {
-    final int WIDTH = 300;
-    final int HEIGHT = 600;
-    public static int left_x;
-    public static int right_x;
-    public static int top_y;
-    public static int bottom_y;
 
-    public GameController() {
-        left_x = (GamePanel.WIDTH - WIDTH) / 2;
-        right_x = left_x + WIDTH;
-        top_y = 50;
-        bottom_y = top_y + HEIGHT;
+    private Board            board;
+    private TetrominoFactory factory;
+    private GameState        state;
+    
+    private Tetromino        current;
+    private Tetromino        held;
+    private boolean          holdUsed;
+    private Timer            dropTimer;
+
+    public GameController(Board board, TetrominoFactory factory, GameState state) {
+        this.board   = board;
+        this.factory = factory;
+        this.state   = state;
+        
+        spawnNext();
+        initTimer();
     }
 
-    public void update() {
-
-    }
-    public void paint(Graphics2D g2) {
-        g2.setColor(Color.white);
-        g2.setStroke(new BasicStroke(4f));
-        g2.drawRect(left_x-8, top_y-8, WIDTH+16, HEIGHT+16);
-
-        int x = right_x + 100;
-        int y = top_y + 50;
-        g2.drawRect(x, y, 200,500);
-        g2.setFont(new Font("Arial", Font.PLAIN, 20));
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g2.drawString("PREVIEW", x+56, y+30);   
+    // ============================================================
+    // GAME LOOP (Thread-safe via Swing Timer)
+    // ============================================================
+    private void initTimer() {
+        dropTimer = new Timer(state.getDropInterval(), e -> {
+            if (state.getCurrentState() == GameState.State.PLAYING) {
+                moveDown();
+            }
+        });
     }
 
+    public void start() {
+        state.setState(GameState.State.PLAYING);
+        dropTimer.start();
+    }
+
+    public void stop() {
+        dropTimer.stop();
+    }
+
+    // ============================================================
+    // CORE LOGIC: SPAWN & MOVEMENT
+    // ============================================================
+    private void spawnNext() {
+        current  = factory.next();
+        holdUsed = false;
+        
+        if (board.isGameOver(current)) {
+            state.setState(GameState.State.GAME_OVER);
+            stop();
+        }
+    }
+
+    private void moveDown() {
+        Tetromino probe = current.copy();
+        probe.moveDown();
+        
+        if (board.isValidPosition(probe)) {
+            current.moveDown();
+        } else {
+            // Khối gạch chạm đáy/chạm gạch khác -> Đóng băng
+            board.place(current);
+            int lines = board.clearLines();
+            state.addLines(lines);
+            
+            // Cập nhật lại tốc độ rơi nếu có tăng level
+            dropTimer.setDelay(state.getDropInterval());
+            spawnNext();
+        }
+    }
+
+    // ============================================================
+    // INPUT HANDLING
+    // ============================================================
+    public void handleKey(int keyCode) {
+        if (state.getCurrentState() == GameState.State.GAME_OVER) return;
+
+        // Cho phép pause/resume game
+        if (keyCode == KeyEvent.VK_P) {
+            state.togglePause();
+            return;
+        }
+
+        if (state.getCurrentState() != GameState.State.PLAYING) return;
+
+        Tetromino probe = current.copy();
+        
+        switch (keyCode) {
+            case KeyEvent.VK_LEFT  -> { probe.moveLeft();                 if (board.isValidPosition(probe)) current.moveLeft(); }
+            case KeyEvent.VK_RIGHT -> { probe.moveRight();                if (board.isValidPosition(probe)) current.moveRight(); }
+            case KeyEvent.VK_DOWN  -> moveDown(); // Soft drop
+            case KeyEvent.VK_UP    -> { probe.rotateClockwise();          if (board.isValidPosition(probe)) current.rotateClockwise(); }
+            case KeyEvent.VK_Z     -> { probe.rotateCounterClockwise();   if (board.isValidPosition(probe)) current.rotateCounterClockwise(); }
+            case KeyEvent.VK_SPACE -> hardDrop();
+            case KeyEvent.VK_C     -> holdPiece();
+        }
+    }
+
+    private void hardDrop() {
+        // Dịch chuyển khối hiện tại xuống tận vị trí của bóng mờ (ghost)
+        current = board.getGhost(current);
+        moveDown(); // Gọi moveDown() để thực hiện logic khóa gạch và xóa hàng
+    }
+
+    private void holdPiece() {
+        if (holdUsed) return;
+        
+        if (held == null) {
+            // Cất khối hiện tại đi và sinh khối mới
+            held = new Tetromino(current.getType());
+            spawnNext();
+        } else {
+            // Hoán đổi. Lệnh new Tetromino() đảm bảo khối được lôi ra 
+            // sẽ tự động quay về x=3, y=0 và rotation=0 (Nguyên trạng ban đầu).
+            Tetromino temp = new Tetromino(current.getType());
+            current = new Tetromino(held.getType());
+            held = temp;
+        }
+        holdUsed = true;
+    }
+
+    // ============================================================
+    // GETTERS — GamePanel và SidebarPanel dùng để vẽ GUI
+    // ============================================================
+    public Tetromino getCurrent() { return current; }
+    public Tetromino getHeld()    { return held; }
 }
