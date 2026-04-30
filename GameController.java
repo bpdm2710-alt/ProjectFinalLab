@@ -64,7 +64,23 @@ public class GameController {
             // Khối gạch chạm đáy/chạm gạch khác -> Đóng băng
             board.place(current);
             int lines = board.clearLines();
+            
+            // 1. Âm thanh chạm đáy
+            SoundManager.getInstance().play(SoundManager.PLACE);
+            
+            // 2. Âm thanh xóa dòng
+            if (lines == 4) {
+                SoundManager.getInstance().play(SoundManager.TETRIS);
+            } else if (lines > 0) {
+                SoundManager.getInstance().play(SoundManager.CLEAR);
+            }
+            
+            // 3. Tính điểm và check Level Up
+            int oldLevel = state.getLevel();
             state.addLines(lines);
+            if (state.getLevel() > oldLevel) {
+                SoundManager.getInstance().play(SoundManager.LEVEL_UP);
+            }
             
             // Cập nhật lại tốc độ rơi nếu có tăng level
             dropTimer.setDelay(state.getDropInterval());
@@ -76,9 +92,19 @@ public class GameController {
     // INPUT HANDLING
     // ============================================================
     public void handleKey(int keyCode) {
+        // Restart từ GAME_OVER
+        if (keyCode == KeyEvent.VK_R &&
+            state.getCurrentState() == GameState.State.GAME_OVER) {
+            board.reset();
+            factory.reset();
+            state.reset();
+            spawnNext();
+            start();
+            return;
+        }
+
         if (state.getCurrentState() == GameState.State.GAME_OVER) return;
 
-        // Cho phép pause/resume game
         if (keyCode == KeyEvent.VK_P) {
             state.togglePause();
             return;
@@ -89,11 +115,35 @@ public class GameController {
         Tetromino probe = current.copy();
         
         switch (keyCode) {
-            case KeyEvent.VK_LEFT  -> { probe.moveLeft();                 if (board.isValidPosition(probe)) current.moveLeft(); }
-            case KeyEvent.VK_RIGHT -> { probe.moveRight();                if (board.isValidPosition(probe)) current.moveRight(); }
+            case KeyEvent.VK_LEFT  -> { 
+                probe.moveLeft();                 
+                if (board.isValidPosition(probe)) { 
+                    current.moveLeft(); 
+                    SoundManager.getInstance().play(SoundManager.MOVE); 
+                } 
+            }
+            case KeyEvent.VK_RIGHT -> { 
+                probe.moveRight();                
+                if (board.isValidPosition(probe)) { 
+                    current.moveRight(); 
+                    SoundManager.getInstance().play(SoundManager.MOVE); 
+                } 
+            }
             case KeyEvent.VK_DOWN  -> moveDown(); // Soft drop
-            case KeyEvent.VK_UP    -> { probe.rotateClockwise();          if (board.isValidPosition(probe)) current.rotateClockwise(); }
-            case KeyEvent.VK_Z     -> { probe.rotateCounterClockwise();   if (board.isValidPosition(probe)) current.rotateCounterClockwise(); }
+            case KeyEvent.VK_UP    -> { 
+                probe.rotateClockwise();          
+                if (board.isValidPosition(probe)) { 
+                    current.rotateClockwise(); 
+                    SoundManager.getInstance().play(SoundManager.ROTATE); 
+                } 
+            }
+            case KeyEvent.VK_Z     -> { 
+                probe.rotateCounterClockwise();   
+                if (board.isValidPosition(probe)) { 
+                    current.rotateCounterClockwise(); 
+                    SoundManager.getInstance().play(SoundManager.ROTATE); 
+                } 
+            }
             case KeyEvent.VK_SPACE -> hardDrop();
             case KeyEvent.VK_C     -> holdPiece();
         }
@@ -102,7 +152,7 @@ public class GameController {
     private void hardDrop() {
         // Dịch chuyển khối hiện tại xuống tận vị trí của bóng mờ (ghost)
         current = board.getGhost(current);
-        moveDown(); // Gọi moveDown() để thực hiện logic khóa gạch và xóa hàng
+        moveDown(); // Gọi moveDown() để thực hiện logic khóa gạch, xóa hàng và phát âm thanh
     }
 
     private void holdPiece() {

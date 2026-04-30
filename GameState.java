@@ -51,7 +51,7 @@ public class GameState {
         score += points;
         totalLinesCleared += linesCleared;
         level = (totalLinesCleared / 10) + 1;
-        notifyChanged();
+        notifyChanged(); 
     }
 
     // ============================================================
