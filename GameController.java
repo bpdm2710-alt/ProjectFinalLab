@@ -27,7 +27,7 @@ public class GameController {
         g2.drawRect(x, y, 200,500);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g2.drawString("PREVIEW", x+56, y+30);
+        g2.drawString("PREVIEW", x+56, y+30);   
     }
 
 }
