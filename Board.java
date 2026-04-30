@@ -82,13 +82,14 @@ public class Board {
     }
 
     private void removeLine(int targetRow) {
-        // Dịch tất cả dòng phía trên xuống 1
+        // Dòng targetRow bị xóa, các dòng trên rơi xuống 1 hàng
         for (int row = targetRow; row > 0; row--) {
-            grid[row] = grid[row - 1].clone();
+            grid[row] = grid[row - 1];
         }
         // Dòng trên cùng trở thành trống
         grid[0] = new Color[COLS];
     }
+
 
     // ============================================================
     // GAME OVER — khối spawn mà không có chỗ
@@ -101,26 +102,14 @@ public class Board {
     // GHOST PIECE — tính vị trí drop thấp nhất
     // ============================================================
     public Tetromino getGhost(Tetromino t) {
-        Tetromino ghost = t.copy();
-        while (isValidPosition(ghost)) {
+        Tetromino ghost = t.copy(); //
+        while (true) {
+            Tetromino probe = ghost.copy();
+            probe.moveDown();
+            if (!isValidPosition(probe)) break;
             ghost.moveDown();
         }
-        ghost.rotateClockwise(); // undo moveDown cuối (đã invalid)
-        // rollback 1 bước
-        Tetromino result = t.copy();
-        result = t.copy();
-        int steps = 0;
-        Tetromino probe = t.copy();
-        while (isValidPosition(probe)) {
-            probe.moveDown();
-            steps++;
-        }
-        // steps-1 là số bước hợp lệ
-        Tetromino finalGhost = t.copy();
-        for (int i = 0; i < steps - 1; i++) {
-            finalGhost.moveDown();
-        }
-        return finalGhost;
+        return ghost;
     }
 
     // ============================================================
