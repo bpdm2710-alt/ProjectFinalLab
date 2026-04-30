@@ -110,6 +110,10 @@ public class Tetromino {
         rotation = (rotation + 3) % 4;
     }
 
+    public void rotate180() {
+        rotation = (rotation + 2) % 4;
+    }
+
     // Dùng khi cần thử di chuyển/xoay rồi rollback nếu collision
     public Tetromino copy() {
         Tetromino t = new Tetromino(this.type);

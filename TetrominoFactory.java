@@ -13,8 +13,7 @@ public class TetrominoFactory {
 
     public TetrominoFactory() {
         queue = new LinkedList<>();
-        refill(); // Nạp túi thứ 1
-        refill(); // Nạp túi thứ 2 để đảm bảo luôn đủ khối cho preview
+        reset();
     }
 
     public Tetromino next() {
@@ -22,6 +21,7 @@ public class TetrominoFactory {
         if (queue.size() <= 7) {
             refill();
         }
+        // Lấy và xóa khối ở đầu hàng đợi
         return new Tetromino(queue.poll());
     }
 
@@ -38,7 +38,7 @@ public class TetrominoFactory {
     // ============================================================
     public List<Tetromino> preview(int count) {
         List<Tetromino> result = new ArrayList<>();
-        // Chỉ việc đọc, không thay đổi state của queue
+        // Chỉ việc đọc, KHÔNG thay đổi state của queue
         for (int i = 0; i < count && i < queue.size(); i++) {
             result.add(new Tetromino(queue.get(i)));
         }
@@ -47,7 +47,7 @@ public class TetrominoFactory {
 
     public void reset() {
         queue.clear();
-        refill();
-        refill();
+        refill(); // Nạp túi thứ 1
+        refill(); // Nạp túi thứ 2 để đảm bảo luôn đủ khối cho preview(3)
     }
 }

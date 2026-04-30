@@ -37,8 +37,13 @@ public class GamePanel extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                controller.handleKey(e.getKeyCode());
+                controller.keyPressed(e.getKeyCode());
                 repaint();
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                controller.keyReleased(e.getKeyCode());
             }
         });
 

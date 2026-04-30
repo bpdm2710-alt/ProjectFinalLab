@@ -74,7 +74,7 @@ public class GameState {
         listeners.add(callback);
     }
 
-    private void notifyChanged() {
+    public void notifyChanged() {
         for (Runnable r : listeners) {
             r.run();
         }
