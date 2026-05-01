@@ -9,6 +9,8 @@ import java.awt.event.WindowEvent;
 
 public class Main {
 
+    private static final Dimension WINDOW_SIZE = new Dimension(1280, 720);
+
     private static void applyWindowBounds(JFrame frame, Rectangle bounds, Dimension minimumSize) {
     Rectangle screenBounds = GraphicsEnvironment
         .getLocalGraphicsEnvironment()
@@ -40,16 +42,15 @@ public class Main {
 
             JFrame frame = new JFrame("Tetris");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setResizable(true);
+                frame.setResizable(false);
             frame.setLayout(new BorderLayout());
             frame.add(gamePanel,    BorderLayout.CENTER);
             frame.add(sidebarPanel, BorderLayout.EAST);
             frame.pack();
-            Dimension minimumSize = new Dimension(
-                    GamePanel.WIDTH + SidebarPanel.WIDTH,
-                    Math.max(GamePanel.HEIGHT, SidebarPanel.HEIGHT)
-            );
+                Dimension minimumSize = new Dimension(WINDOW_SIZE);
             frame.setMinimumSize(minimumSize);
+                frame.setMaximumSize(minimumSize);
+                frame.setSize(WINDOW_SIZE);
             gamePanel.setMinimumSize(new Dimension(GamePanel.WIDTH, GamePanel.HEIGHT));
             sidebarPanel.setMinimumSize(new Dimension(SidebarPanel.WIDTH, SidebarPanel.HEIGHT));
             frame.setLocationRelativeTo(null);

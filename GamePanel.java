@@ -310,13 +310,15 @@ public class GamePanel extends JPanel {
     }
 
     private void drawSettingsOverlay(Graphics2D g2, ThemeManager.ThemePalette palette) {
-        Rectangle card = getOverlayCardBounds(0.92, 0.92, 320, 300);
+        Rectangle card = getOverlayCardBounds(0.92, 0.92, 300, 360);
         int boardCenterX = card.x + card.width / 2;
         SoundManager sm = SoundManager.getInstance();
-        int titleSize = clampInt(card.height / 8, 20, 32);
-        int sectionSize = clampInt(card.height / 22, 10, 14);
-        int gap = clampInt(card.height / 32, 6, 10);
-        int padding = 14;
+        int titleSize = clampInt(card.height / 8, 22, 34);
+        int sectionSize = clampInt(card.height / 24, 11, 15);
+        int bodySize = clampInt(card.height / 20, 13, 18);
+        int tinySize = clampInt(card.height / 30, 10, 12);
+        int gap = clampInt(card.height / 28, 8, 14);
+        int padding = 16;
 
         // Background
         g2.setColor(new Color(0, 0, 0, 165));
@@ -328,27 +330,60 @@ public class GamePanel extends JPanel {
         
         // Title
         drawCenteredText(g2, "SETTINGS", boardCenterX, y + titleSize / 2, titleSize, palette.text);
-        y += titleSize + gap + 4;
+        y += titleSize + gap;
 
         // Section 1: Theme
         drawCenteredText(g2, "THEME", boardCenterX, y, sectionSize, palette.textSecondary);
-        y += sectionSize + 2;
-        drawCenteredText(g2, formatThemeName(ThemeManager.getCurrentTheme()), boardCenterX, y, sectionSize, palette.text);
-        y += sectionSize + gap + 6;
+        y += sectionSize + 4;
+        drawStatusTile(g2,
+            new Rectangle(card.x + 14, y, card.width - 28, 42),
+            "CURRENT",
+            formatThemeName(ThemeManager.getCurrentTheme()),
+            "Press T to cycle theme",
+            palette,
+            bodySize,
+            tinySize);
+        y += 52;
 
-        // Section 2: BGM Control
-        String bgmText = sm.isBackgroundMusicMuted() ? "BGM: OFF" : "BGM: ON (" + sm.getBackgroundMusicVolumePercent() + "%)";
-        drawCenteredText(g2, bgmText, boardCenterX, y, sectionSize, palette.textSecondary);
-        y += sectionSize + gap + 2;
-        
-        // Section 3: SFX Control
-        String sfxText = sm.isSfxMuted() ? "SFX: OFF" : "SFX: ON (" + sm.getSfxVolumePercent() + "%)";
-        drawCenteredText(g2, sfxText, boardCenterX, y, sectionSize, palette.textSecondary);
-        y += sectionSize + gap + 2;
-        
-        // Section 4: Audio Files Available
-        drawCenteredText(g2, "Audio: " + sm.getAvailableSfxCount() + "/7 files", boardCenterX, y, sectionSize - 1, palette.grid);
-        y += sectionSize + gap + 6;
+        // Section 2: Audio
+        drawCenteredText(g2, "AUDIO", boardCenterX, y, sectionSize, palette.textSecondary);
+        y += sectionSize + 4;
+
+        String bgmValue = sm.isBackgroundMusicMuted()
+            ? "MUTED"
+            : sm.getBackgroundMusicVolumePercent() + "%";
+        String bgmSubtitle = "SRC: " + sm.getBackgroundMusicStatus();
+        drawStatusTile(g2,
+            new Rectangle(card.x + 14, y, card.width - 28, 54),
+            "BGM",
+            bgmValue,
+            bgmSubtitle,
+            palette,
+            bodySize,
+            tinySize);
+        y += 64;
+
+        String sfxValue = sm.isSfxMuted()
+            ? "MUTED"
+            : sm.getSfxVolumePercent() + "%";
+        String sfxSubtitle = "FILES: " + sm.getAvailableSfxCount() + "/7  |  F6/F5 adjusts";
+        drawStatusTile(g2,
+            new Rectangle(card.x + 14, y, card.width - 28, 54),
+            "SFX",
+            sfxValue,
+            sfxSubtitle,
+            palette,
+            bodySize,
+            tinySize);
+        y += 72;
+
+        drawCenteredText(g2,
+            "M / N mute  |  F8 / F7 BGM  |  F6 / F5 SFX",
+            boardCenterX,
+            y,
+            tinySize,
+            palette.grid);
+        y += tinySize + gap + 4;
 
         // Buttons section
         for (UiButton button : getSettingsButtons(card, sm)) {
@@ -553,39 +588,59 @@ public class GamePanel extends JPanel {
 
     private List<UiButton> getSettingsButtons(Rectangle card, SoundManager sm) {
         List<UiButton> buttons = new ArrayList<>();
-        int gap = clampInt(card.height / 24, 8, 12);
-        int buttonHeight = clampInt(card.height / 9, 24, 36);
+        int gap = clampInt(card.height / 28, 8, 12);
+        int buttonHeight = clampInt(card.height / 11, 24, 34);
         int innerMargin = 14;
         int fullWidth = card.width - innerMargin * 2;
         int halfWidth = (fullWidth - gap) / 2;
         int x1 = card.x + innerMargin;
         int x2 = x1 + halfWidth + gap;
 
-        // Buttons start from 45% down the card to avoid overlap with header info
-        int topY = card.y + clampInt((int) (card.height * 0.48), 140, 180);
+        // Buttons start below the info tiles so they do not collide with the header rows.
+        int topY = card.y + clampInt((int) (card.height * 0.68), 300, 390);
         int backY = card.y + card.height - buttonHeight - 12;
 
         // Calculate button positions with better spacing
         int availableHeight = backY - topY;
-        int totalNeeded = buttonHeight * 5 + gap * 4;
+        int totalNeeded = buttonHeight * 4 + gap * 3;
         if (totalNeeded > availableHeight) {
-            buttonHeight = Math.max(20, (availableHeight - gap * 4) / 5);
+            buttonHeight = Math.max(20, (availableHeight - gap * 3) / 4);
             backY = card.y + card.height - buttonHeight - 12;
         }
 
         int row1Y = topY;
         int row2Y = row1Y + gap + buttonHeight;
-        int row3Y = row2Y + gap + buttonHeight;
-        int row4Y = row3Y + gap + buttonHeight;
 
         buttons.add(new UiButton("settings.theme", "THEME", new Rectangle(x1, row1Y, fullWidth, buttonHeight), KeyEvent.VK_T, true));
         buttons.add(new UiButton("settings.bgmToggle", sm.isBackgroundMusicMuted() ? "BGM ON" : "BGM OFF", new Rectangle(x1, row2Y, halfWidth, buttonHeight), KeyEvent.VK_M, false));
         buttons.add(new UiButton("settings.sfxToggle", sm.isSfxMuted() ? "SFX ON" : "SFX OFF", new Rectangle(x2, row2Y, halfWidth, buttonHeight), KeyEvent.VK_N, false));
-        buttons.add(new UiButton("settings.bgmVol", "BGM:", new Rectangle(x1, row3Y, halfWidth, buttonHeight), -1, false));
-        buttons.add(new UiButton("settings.sfxVol", "SFX:", new Rectangle(x2, row3Y, halfWidth, buttonHeight), -1, false));
         buttons.add(new UiButton("settings.back", "BACK", new Rectangle(x1, backY, fullWidth, buttonHeight), KeyEvent.VK_ESCAPE, true));
 
         return buttons;
+    }
+
+    private void drawStatusTile(Graphics2D g2, Rectangle bounds, String title, String value,
+                                String subtitle, ThemeManager.ThemePalette palette,
+                                int valueSize, int subtitleSize) {
+        g2.setColor(new Color(35, 35, 35, 210));
+        g2.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 12, 12);
+        g2.setColor(palette.grid);
+        g2.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 12, 12);
+
+        g2.setColor(palette.textSecondary);
+        g2.setFont(new Font("Monospaced", Font.PLAIN, subtitleSize + 1));
+        g2.drawString(title, bounds.x + 10, bounds.y + 16);
+
+        g2.setColor(palette.text);
+        g2.setFont(new Font("Monospaced", Font.BOLD, valueSize));
+        FontMetrics fm = g2.getFontMetrics();
+        int valueX = bounds.x + bounds.width - fm.stringWidth(value) - 10;
+        int valueY = bounds.y + 18;
+        g2.drawString(value, valueX, valueY);
+
+        g2.setColor(palette.textSecondary);
+        g2.setFont(new Font("Monospaced", Font.PLAIN, subtitleSize));
+        g2.drawString(subtitle, bounds.x + 10, bounds.y + bounds.height - 10);
     }
 
     private Rectangle getOverlayCardBounds(double widthRatio, double heightRatio, int minWidth, int minHeight) {
