@@ -26,6 +26,7 @@ public class GameController {
     private Tetromino        held;
     private boolean          holdUsed;
     private Timer            dropTimer;
+    private boolean          lastRotationWasWallKick;
     
 
     public GameController(Board board, TetrominoFactory factory, GameState state) {
@@ -86,6 +87,7 @@ public class GameController {
     private void spawnNext() {
         current = factory.next();
         holdUsed = false;
+        lastRotationWasWallKick = false; // Reset wall kick flag for new piece
         
         // Reset toàn bộ trạng thái Lock cho gạch mới
         isLocking = false;
@@ -124,16 +126,20 @@ public class GameController {
         board.place(current);
         int lines = board.clearLines();
         
+        // T-Spin detection: T-piece (type 2) locked after wall kick
+        boolean isTSpin = (current.getType() == 2) && lastRotationWasWallKick;
+        
         SoundManager.getInstance().play(SoundManager.PLACE);
         if (lines == 4) SoundManager.getInstance().play(SoundManager.TETRIS);
         else if (lines > 0) SoundManager.getInstance().play(SoundManager.CLEAR);
         
         int oldLevel = state.getLevel();
-        state.addLines(lines);
+        state.addLines(lines, isTSpin);
         if (state.getLevel() > oldLevel) {
             SoundManager.getInstance().play(SoundManager.LEVEL_UP);
         }
         
+        lastRotationWasWallKick = false; // Reset for next piece
         dropTimer.setDelay(state.getDropInterval());
         spawnNext();
     }
@@ -274,27 +280,33 @@ public class GameController {
                 if (!downPressed) { downPressed = true; lastSdfTime = now; moveDown(); }
             }
             case KeyEvent.VK_UP, KeyEvent.VK_X -> {
+                int oldX = current.getX(), oldY = current.getY();
                 Tetromino rotated = board.tryRotateCW(current);
                 if (rotated != null) {
                     current = rotated;
+                    lastRotationWasWallKick = (current.getX() != oldX || current.getY() != oldY);
                     SoundManager.getInstance().play(SoundManager.ROTATE);
                     resetLockDelay();
                 }
             }
 
             case KeyEvent.VK_Z -> {
+                int oldX = current.getX(), oldY = current.getY();
                 Tetromino rotated = board.tryRotateCCW(current);
                 if (rotated != null) {
                     current = rotated;
+                    lastRotationWasWallKick = (current.getX() != oldX || current.getY() != oldY);
                     SoundManager.getInstance().play(SoundManager.ROTATE);
                     resetLockDelay();
                 }
             }
 
             case KeyEvent.VK_A -> {
+                int oldX = current.getX(), oldY = current.getY();
                 Tetromino rotated = board.tryRotate180(current);
                 if (rotated != null) {
                     current = rotated;
+                    lastRotationWasWallKick = (current.getX() != oldX || current.getY() != oldY);
                     SoundManager.getInstance().play(SoundManager.ROTATE);
                     resetLockDelay();
                 }

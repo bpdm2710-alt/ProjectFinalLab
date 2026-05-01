@@ -27,6 +27,9 @@ public class GameState {
     private int highScore;
     private int level;
     private int totalLinesCleared;
+    private int comboCount;
+    private boolean lastIsTSpin;
+    private int lastTSpinBonus;
 
     // Observer — Danh sách các listener (GamePanel, SidebarPanel, SoundManager...)
     private List<Runnable> listeners;
@@ -46,6 +49,9 @@ public class GameState {
         score = 0;
         level = 1;
         totalLinesCleared = 0;
+        comboCount = 0;
+        lastIsTSpin = false;
+        lastTSpinBonus = 0;
         currentState = State.MENU;
     }
 
@@ -53,16 +59,43 @@ public class GameState {
     // SCORING
     // ============================================================
     public void addLines(int linesCleared) {
-        if (linesCleared <= 0) return;
+        addLines(linesCleared, false);
+    }
+
+    public void addLines(int linesCleared, boolean isTSpin) {
+        if (linesCleared <= 0) {
+            comboCount = 0; // Reset combo if no lines cleared
+            lastIsTSpin = false;
+            lastTSpinBonus = 0;
+            return;
+        }
+        
         int points = LINE_POINTS[Math.min(linesCleared, 4)] * level;
-        score += points;
+        
+        // Combo bonus: extra 50 points per combo count
+        int comboBonus = comboCount * 50;
+        
+        // T-Spin bonus: varies by lines cleared
+        int tspinBonus = 0;
+        if (isTSpin) {
+            if (linesCleared == 1) tspinBonus = 400 * level;      // T-Spin Single
+            else if (linesCleared == 2) tspinBonus = 800 * level;  // T-Spin Double
+            else if (linesCleared >= 3) tspinBonus = 1200 * level; // T-Spin Triple
+        }
+        
+        score += points + comboBonus + tspinBonus;
+        
         if (score > highScore) {
             highScore = score;
             saveHighScore();
         }
+        
         totalLinesCleared += linesCleared;
+        comboCount++;
         level = (totalLinesCleared / 10) + 1;
-        notifyChanged(); 
+        lastIsTSpin = isTSpin;
+        lastTSpinBonus = tspinBonus;
+        notifyChanged();
     }
 
     // ============================================================
@@ -99,6 +132,13 @@ public class GameState {
     public int getHighScore() { return highScore; }
     public int getLevel() { return level; }
     public int getLinesCleared() { return totalLinesCleared; }
+    public int getComboCount() { return comboCount; }
+    public boolean getLastIsTSpin() { return lastIsTSpin; }
+    public int getLastTSpinBonus() { return lastTSpinBonus; }
+    
+    public void clearTSpinFlag() {
+        lastIsTSpin = false;
+    }
 
     // Drop speed tính bằng ms — level càng cao càng nhanh
     public int getDropInterval() {

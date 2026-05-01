@@ -45,6 +45,7 @@ public class GamePanel extends JPanel {
     // ============================================================
     private Timer renderTimer;
     private long audioHudVisibleUntil;
+    private long tspinNotificationUntil;
     private String hoveredButtonId;
     private String pressedButtonId;
 
@@ -58,6 +59,7 @@ public class GamePanel extends JPanel {
         setBackground(palette.boardBackground);
         setFocusable(true);
         audioHudVisibleUntil = 0;
+        tspinNotificationUntil = 0;
 
         // Input
         addKeyListener(new KeyAdapter() {
@@ -167,6 +169,12 @@ public class GamePanel extends JPanel {
         if (state.getCurrentState() != GameState.State.MENU
                 && state.getCurrentState() != GameState.State.SETTINGS) {
             drawAudioHud(g2, palette);
+            // Check for T-Spin and trigger notification
+            if (state.getLastIsTSpin()) {
+                tspinNotificationUntil = System.currentTimeMillis() + 2000; // Show for 2 seconds
+                state.clearTSpinFlag(); // Prevent repeated notifications
+            }
+            drawTSpinNotification(g2, palette);
         }
         drawOverlay(g2);
     }
@@ -302,29 +310,47 @@ public class GamePanel extends JPanel {
     }
 
     private void drawSettingsOverlay(Graphics2D g2, ThemeManager.ThemePalette palette) {
-        Rectangle card = getOverlayCardBounds(0.92, 0.92, 300, 270);
+        Rectangle card = getOverlayCardBounds(0.92, 0.92, 320, 300);
         int boardCenterX = card.x + card.width / 2;
         SoundManager sm = SoundManager.getInstance();
-        int titleSize = clampInt(card.height / 7, 22, 36);
-        int textSize = clampInt(card.height / 17, 12, 18);
-        int hintSize = clampInt(card.height / 23, 10, 13);
-        int y = card.y + clampInt(card.height / 12, 12, 22);
+        int titleSize = clampInt(card.height / 8, 20, 32);
+        int sectionSize = clampInt(card.height / 22, 10, 14);
+        int gap = clampInt(card.height / 32, 6, 10);
+        int padding = 14;
 
+        // Background
         g2.setColor(new Color(0, 0, 0, 165));
         g2.fillRoundRect(card.x, card.y, card.width, card.height, 18, 18);
         g2.setColor(palette.grid);
         g2.drawRoundRect(card.x, card.y, card.width, card.height, 18, 18);
 
+        int y = card.y + padding;
+        
+        // Title
         drawCenteredText(g2, "SETTINGS", boardCenterX, y + titleSize / 2, titleSize, palette.text);
-        y += titleSize + clampInt(card.height / 26, 6, 12);
-        drawCenteredText(g2, "Theme: " + formatThemeName(ThemeManager.getCurrentTheme()), boardCenterX, y + textSize / 2, textSize, palette.text);
-        y += textSize + 4;
-        drawCenteredText(g2, "BGM: " + (sm.isBackgroundMusicMuted() ? "OFF" : "ON") + "   SFX: " + (sm.isSfxMuted() ? "OFF" : "ON"), boardCenterX, y + hintSize / 2, hintSize, palette.textSecondary);
-        y += hintSize + 4;
-        drawCenteredText(g2, "SFX detected: " + sm.getAvailableSfxCount() + "/7", boardCenterX, y + hintSize / 2, hintSize, palette.textSecondary);
+        y += titleSize + gap + 4;
 
-        drawSfxStatusPanel(g2, card, sm, palette);
+        // Section 1: Theme
+        drawCenteredText(g2, "THEME", boardCenterX, y, sectionSize, palette.textSecondary);
+        y += sectionSize + 2;
+        drawCenteredText(g2, formatThemeName(ThemeManager.getCurrentTheme()), boardCenterX, y, sectionSize, palette.text);
+        y += sectionSize + gap + 6;
 
+        // Section 2: BGM Control
+        String bgmText = sm.isBackgroundMusicMuted() ? "BGM: OFF" : "BGM: ON (" + sm.getBackgroundMusicVolumePercent() + "%)";
+        drawCenteredText(g2, bgmText, boardCenterX, y, sectionSize, palette.textSecondary);
+        y += sectionSize + gap + 2;
+        
+        // Section 3: SFX Control
+        String sfxText = sm.isSfxMuted() ? "SFX: OFF" : "SFX: ON (" + sm.getSfxVolumePercent() + "%)";
+        drawCenteredText(g2, sfxText, boardCenterX, y, sectionSize, palette.textSecondary);
+        y += sectionSize + gap + 2;
+        
+        // Section 4: Audio Files Available
+        drawCenteredText(g2, "Audio: " + sm.getAvailableSfxCount() + "/7 files", boardCenterX, y, sectionSize - 1, palette.grid);
+        y += sectionSize + gap + 6;
+
+        // Buttons section
         for (UiButton button : getSettingsButtons(card, sm)) {
             drawButton(g2, button, palette,
                     button.id.equals(hoveredButtonId),
@@ -333,44 +359,7 @@ public class GamePanel extends JPanel {
     }
 
     private void drawSfxStatusPanel(Graphics2D g2, Rectangle card, SoundManager sm, ThemeManager.ThemePalette palette) {
-        Map<String, String> status = sm.getSfxStatusMap();
-        int panelMarginX = clampInt(card.width / 16, 14, 20);
-        int panelY = card.y + clampInt(card.height / 4, 62, 94);
-        int panelWidth = card.width - panelMarginX * 2;
-        int panelHeight = clampInt(card.height / 4, 68, 92);
-        int titleSize = clampInt(card.height / 26, 10, 13);
-        int rowSize = clampInt(card.height / 28, 9, 12);
-
-        g2.setColor(new Color(0, 0, 0, 120));
-        g2.fillRoundRect(card.x + panelMarginX, panelY, panelWidth, panelHeight, 10, 10);
-        g2.setColor(palette.grid);
-        g2.drawRoundRect(card.x + panelMarginX, panelY, panelWidth, panelHeight, 10, 10);
-
-        int centerX = card.x + card.width / 2;
-        drawCenteredText(g2, "SFX STATUS", centerX, panelY + titleSize + 2, titleSize, palette.textSecondary);
-
-        int leftX = card.x + panelMarginX + 10;
-        int rightX = card.x + panelMarginX + panelWidth / 2 + 4;
-        int rowY = panelY + titleSize + 14;
-        int lineHeight = Math.max(11, rowSize + 2);
-        int col = 0;
-        int row = 0;
-
-        g2.setFont(new Font("Monospaced", Font.PLAIN, rowSize));
-        for (Map.Entry<String, String> entry : status.entrySet()) {
-            int x = (col == 0) ? leftX : rightX;
-            int y = rowY + row * lineHeight;
-            g2.setColor(palette.text);
-            g2.drawString(entry.getKey(), x, y);
-            g2.setColor(palette.textSecondary);
-            g2.drawString(" " + simplifySfxStatus(entry.getValue()), x + clampInt(panelWidth / 6, 40, 78), y);
-
-            col++;
-            if (col > 1) {
-                col = 0;
-                row++;
-            }
-        }
+        // This method is now deprecated - SFX status is shown more compactly in drawSettingsOverlay
     }
 
     private String simplifySfxStatus(String status) {
@@ -428,6 +417,55 @@ public class GamePanel extends JPanel {
         int x = cx - fm.stringWidth(text) / 2;
         int y = cy + fm.getAscent() / 2;
         g2.drawString(text, x, y);
+    }
+
+    private void drawTSpinNotification(Graphics2D g2, ThemeManager.ThemePalette palette) {
+        if (System.currentTimeMillis() > tspinNotificationUntil) return;
+        
+        int boardCenterX = getBoardOriginX() + getBoardWidth() / 2;
+        int boardCenterY = getBoardOriginY() + getBoardHeight() / 2;
+        int bonus = state.getLastTSpinBonus();
+        String tspinType = "";
+        
+        // Determine T-Spin type from lines cleared
+        int lastLines = state.getLinesCleared(); // This won't work perfectly, but we use bonus as proxy
+        if (bonus == 400) tspinType = "SINGLE";
+        else if (bonus == 800) tspinType = "DOUBLE";
+        else if (bonus >= 1200) tspinType = "TRIPLE";
+        
+        String mainText = "T-SPIN " + tspinType + "!";
+        String bonusText = "+" + bonus + " pts";
+        
+        int boxWidth = 240;
+        int boxHeight = 80;
+        int boxX = boardCenterX - boxWidth / 2;
+        int boxY = boardCenterY - boxHeight / 2;
+        
+        // Flash effect based on time
+        long elapsed = System.currentTimeMillis() % 200;
+        int alpha = elapsed < 100 ? 220 : 160;
+        
+        // Background with gradient effect
+        g2.setColor(new Color(255, 140, 0, alpha)); // Orange
+        g2.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 20, 20);
+        g2.setColor(new Color(255, 180, 0, Math.min(255, alpha + 50)));
+        g2.setStroke(new BasicStroke(3));
+        g2.drawRoundRect(boxX, boxY, boxWidth, boxHeight, 20, 20);
+        
+        // Main text
+        g2.setColor(new Color(255, 255, 255, Math.min(255, alpha + 35)));
+        g2.setFont(new Font("Monospaced", Font.BOLD, 24));
+        FontMetrics fm = g2.getFontMetrics();
+        int mainX = boxX + (boxWidth - fm.stringWidth(mainText)) / 2;
+        int mainY = boxY + 30;
+        g2.drawString(mainText, mainX, mainY);
+        
+        // Bonus text
+        g2.setFont(new Font("Monospaced", Font.BOLD, 18));
+        fm = g2.getFontMetrics();
+        int bonusX = boxX + (boxWidth - fm.stringWidth(bonusText)) / 2;
+        int bonusY = boxY + 60;
+        g2.drawString(bonusText, bonusX, bonusY);
     }
 
     private void drawButton(Graphics2D g2, UiButton button, ThemeManager.ThemePalette palette, boolean hovered, boolean pressed) {
@@ -515,36 +553,36 @@ public class GamePanel extends JPanel {
 
     private List<UiButton> getSettingsButtons(Rectangle card, SoundManager sm) {
         List<UiButton> buttons = new ArrayList<>();
-        int gap = clampInt(card.height / 28, 6, 10);
-        int buttonHeight = clampInt(card.height / 10, 22, 34);
-        int innerMargin = 16;
+        int gap = clampInt(card.height / 24, 8, 12);
+        int buttonHeight = clampInt(card.height / 9, 24, 36);
+        int innerMargin = 14;
         int fullWidth = card.width - innerMargin * 2;
         int halfWidth = (fullWidth - gap) / 2;
         int x1 = card.x + innerMargin;
         int x2 = x1 + halfWidth + gap;
 
-        int topLimit = card.y + clampInt((int) (card.height * 0.56), 120, 210);
+        // Buttons start from 45% down the card to avoid overlap with header info
+        int topY = card.y + clampInt((int) (card.height * 0.48), 140, 180);
         int backY = card.y + card.height - buttonHeight - 12;
-        int neededHeight = buttonHeight * 5 + gap * 4;
-        int availableHeight = Math.max(buttonHeight, (backY + buttonHeight) - topLimit);
-        if (neededHeight > availableHeight) {
-            int reducedHeight = Math.max(18, (availableHeight - gap * 4) / 5);
-            buttonHeight = reducedHeight;
+
+        // Calculate button positions with better spacing
+        int availableHeight = backY - topY;
+        int totalNeeded = buttonHeight * 5 + gap * 4;
+        if (totalNeeded > availableHeight) {
+            buttonHeight = Math.max(20, (availableHeight - gap * 4) / 5);
             backY = card.y + card.height - buttonHeight - 12;
         }
 
-        int row4Y = backY - gap - buttonHeight;
-        int row3Y = row4Y - gap - buttonHeight;
-        int row2Y = row3Y - gap - buttonHeight;
-        int themeY = row2Y - gap - buttonHeight;
+        int row1Y = topY;
+        int row2Y = row1Y + gap + buttonHeight;
+        int row3Y = row2Y + gap + buttonHeight;
+        int row4Y = row3Y + gap + buttonHeight;
 
-        buttons.add(new UiButton("settings.theme", "CYCLE THEME", new Rectangle(x1, themeY, fullWidth, buttonHeight), KeyEvent.VK_T, true));
+        buttons.add(new UiButton("settings.theme", "THEME", new Rectangle(x1, row1Y, fullWidth, buttonHeight), KeyEvent.VK_T, true));
         buttons.add(new UiButton("settings.bgmToggle", sm.isBackgroundMusicMuted() ? "BGM ON" : "BGM OFF", new Rectangle(x1, row2Y, halfWidth, buttonHeight), KeyEvent.VK_M, false));
         buttons.add(new UiButton("settings.sfxToggle", sm.isSfxMuted() ? "SFX ON" : "SFX OFF", new Rectangle(x2, row2Y, halfWidth, buttonHeight), KeyEvent.VK_N, false));
-        buttons.add(new UiButton("settings.bgmDown", "BGM -", new Rectangle(x1, row3Y, halfWidth, buttonHeight), KeyEvent.VK_F7, false));
-        buttons.add(new UiButton("settings.bgmUp", "BGM +", new Rectangle(x2, row3Y, halfWidth, buttonHeight), KeyEvent.VK_F8, false));
-        buttons.add(new UiButton("settings.sfxDown", "SFX -", new Rectangle(x1, row4Y, halfWidth, buttonHeight), KeyEvent.VK_F5, false));
-        buttons.add(new UiButton("settings.sfxUp", "SFX +", new Rectangle(x2, row4Y, halfWidth, buttonHeight), KeyEvent.VK_F6, false));
+        buttons.add(new UiButton("settings.bgmVol", "BGM:", new Rectangle(x1, row3Y, halfWidth, buttonHeight), -1, false));
+        buttons.add(new UiButton("settings.sfxVol", "SFX:", new Rectangle(x2, row3Y, halfWidth, buttonHeight), -1, false));
         buttons.add(new UiButton("settings.back", "BACK", new Rectangle(x1, backY, fullWidth, buttonHeight), KeyEvent.VK_ESCAPE, true));
 
         return buttons;

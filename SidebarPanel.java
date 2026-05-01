@@ -61,7 +61,29 @@ public class SidebarPanel extends JPanel {
         y = drawLabel(g2, "HIGH",   String.valueOf(state.getHighScore()), y + 10, palette);
         y = drawLabel(g2, "LEVEL",  String.valueOf(state.getLevel()),  y + 10, palette);
         y = drawLabel(g2, "LINES",  String.valueOf(state.getLinesCleared()), y + 10, palette);
+        
+        // Combo display
+        if (state.getComboCount() > 0) {
+            y = drawLabel(g2, "COMBO", String.valueOf(state.getComboCount()), y + 10, palette);
+        }
+        
+        // T-Spin indicator
+        if (state.getLastIsTSpin()) {
+            drawTSpinBadge(g2, y + 10, palette);
+            y += 48;
+        }
+        
         return y;
+    }
+    
+    private void drawTSpinBadge(Graphics2D g2, int y, ThemeManager.ThemePalette palette) {
+        g2.setColor(new Color(255, 100, 0)); // Orange for T-Spin
+        g2.fillRect(PADDING, y, WIDTH - PADDING * 2, 24);
+        g2.setColor(palette.text);
+        g2.setFont(new Font("Monospaced", Font.BOLD, 14));
+        int bonus = state.getLastTSpinBonus();
+        String bonusText = bonus > 0 ? " +" + bonus : "";
+        g2.drawString("T-SPIN!" + bonusText, PADDING + 5, y + 17);
     }
 
     private int drawLabel(Graphics2D g2, String title, String value, int y, ThemeManager.ThemePalette palette) {
