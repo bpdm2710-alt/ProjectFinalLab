@@ -28,6 +28,7 @@
 | **Space** | Hard drop (rơi tới đáy ngay) |
 | **C** | Hold piece (giữ khối) |
 | **P** | Tạm dừng / Tiếp tục |
+| **S** | Mở Settings từ Menu |
 | **T** | Chuyển theme (CLASSIC → NEON → ...) |
 | **M** | Bật/Tắt nhạc nền (BGM) |
 | **N** | Bật/Tắt hiệu ứng âm thanh (SFX) |
@@ -83,6 +84,12 @@ Game hỗ trợ 7 loại âm thanh:
 - **Level Up** — Lên level mới
 - **Game Over** — Kết thúc trò chơi
 
+Lưu ý về hệ thống âm thanh hiện tại:
+- Game sẽ ưu tiên đúng tên file chuẩn cho từng event: `move.wav`, `rotate.wav`, `place.wav`, `clear.wav`, `tetris.wav`, `levelup.wav`, `gameover.wav`.
+- Nếu thiếu file chuẩn, game tự fallback sang các file gần nhất đang có trong thư mục `Sound/`.
+- Nếu vẫn không tìm thấy file phù hợp, game phát âm tổng hợp (synth tone) để không bị im lặng.
+- Trong **Settings**, mục **SFX STATUS** hiển thị event nào đang dùng file thật và event nào đang dùng synth.
+
 **Xem hướng dẫn:** Mở file [SOUNDS_AND_THEMES_GUIDE.md](SOUNDS_AND_THEMES_GUIDE.md)
 
 ---
@@ -110,6 +117,7 @@ Game hỗ trợ 7 loại âm thanh:
 4. **Hold Piece** hữu ích để tránh "I-block drought"
 5. **Preview 3 khối** tiếp theo để lên chiến lược
 6. **Ghost Piece** (bóng mờ) hiển thị vị trí hạ cánh
+7. Vào **Settings** từ menu để kiểm tra nhanh trạng thái âm thanh (`SFX STATUS`)
 
 ---
 

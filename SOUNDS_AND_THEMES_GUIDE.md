@@ -3,6 +3,9 @@
 ## 📁 Cấu Trúc Thư Mục
 
 ```
+
+> Khuyến nghị: đặt đúng 7 file chuẩn ở trên để mỗi event có âm riêng.
+> Nếu thiếu file, game vẫn chạy nhờ cơ chế fallback và synth tone.
 Sound/
 ├── move.wav          (Âm thanh di chuyển khối)
 ├── rotate.wav        (Âm thanh xoay khối)
@@ -66,6 +69,27 @@ Sound/
 2. Đặt vào thư mục `Sound/`
 3. Đặt tên theo đúng tên trong danh sách trên
 4. Restart game
+
+### 🔁 Fallback và Synth (đã tích hợp trong code)
+
+- Mỗi event âm thanh có nhiều tên file dự phòng.
+- Nếu thiếu file chuẩn, game sẽ thử tên thay thế trước khi bỏ qua.
+- Nếu không có file nào khả dụng, game phát synth tone tương ứng event để không bị mất âm hoàn toàn.
+
+Ví dụ mapping dự phòng:
+- `MOVE`: `move.wav` → `touch floor.wav`
+- `ROTATE`: `rotate.wav` → `rotation.wav`
+- `CLEAR`: `clear.wav` → `delete line.wav`
+
+### 🧪 Kiểm Tra Trong Settings
+
+Từ menu game:
+1. Nhấn `S` để vào **SETTINGS**
+2. Xem khung **SFX STATUS**
+
+Ý nghĩa hiển thị:
+- `F:<tên file>`: event đang dùng file âm thanh thật
+- `SYNTH`: event chưa có file phù hợp, đang dùng âm tổng hợp
 
 **Ví dụ:**
 ```

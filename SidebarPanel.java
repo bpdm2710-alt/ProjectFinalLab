@@ -38,6 +38,8 @@ public class SidebarPanel extends JPanel {
     // ============================================================
     @Override
     protected void paintComponent(Graphics g) {
+        ThemeManager.ThemePalette palette = ThemeManager.getPalette();
+        setBackground(palette.sidebarBackground);
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
@@ -56,6 +58,7 @@ public class SidebarPanel extends JPanel {
         int y = startY;
         ThemeManager.ThemePalette palette = ThemeManager.getPalette();
         y = drawLabel(g2, "SCORE",  String.valueOf(state.getScore()),  y, palette);
+        y = drawLabel(g2, "HIGH",   String.valueOf(state.getHighScore()), y + 10, palette);
         y = drawLabel(g2, "LEVEL",  String.valueOf(state.getLevel()),  y + 10, palette);
         y = drawLabel(g2, "LINES",  String.valueOf(state.getLinesCleared()), y + 10, palette);
         return y;
@@ -116,9 +119,16 @@ public class SidebarPanel extends JPanel {
     }
 
     private void drawTetrominoBox(Graphics2D g2, Tetromino t, int boxY) {
+        ThemeManager.ThemePalette palette = ThemeManager.getPalette();
+
         // Background box
-        g2.setColor(new Color(35, 35, 35));
+        g2.setColor(palette.boardBackground);
         g2.fillRoundRect(PADDING - 4, boxY,
+                         WIDTH - PADDING * 2 + 8, CELL_SIZE * 3,
+                         8, 8);
+
+        g2.setColor(palette.grid);
+        g2.drawRoundRect(PADDING - 4, boxY,
                          WIDTH - PADDING * 2 + 8, CELL_SIZE * 3,
                          8, 8);
 

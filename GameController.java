@@ -68,6 +68,14 @@ public class GameController {
         dropTimer.start();
     }
 
+    public void startGame() {
+        board.reset();
+        factory.reset();
+        state.reset();
+        spawnNext();
+        start();
+    }
+
     public void stop() {
         dropTimer.stop();
     }
@@ -200,9 +208,28 @@ public class GameController {
     }
 
     public void keyPressed(int keyCode) {
+        if (state.getCurrentState() == GameState.State.MENU) {
+            if (keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_SPACE) {
+                startGame();
+                return;
+            }
+            if (keyCode == KeyEvent.VK_S) {
+                state.setState(GameState.State.SETTINGS);
+                return;
+            }
+        }
+        if (state.getCurrentState() == GameState.State.SETTINGS) {
+            if (keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_BACK_SPACE) {
+                state.setState(GameState.State.MENU);
+                return;
+            }
+            if (keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_SPACE) {
+                startGame();
+                return;
+            }
+        }
         if (state.getCurrentState() == GameState.State.GAME_OVER && keyCode == KeyEvent.VK_R) {
-            board.reset(); factory.reset(); state.reset();
-            spawnNext(); start();
+            startGame();
             return;
         }
         if (keyCode == KeyEvent.VK_M) {
@@ -286,13 +313,6 @@ public class GameController {
             case KeyEvent.VK_RIGHT -> rightPressed = false;
             case KeyEvent.VK_DOWN  -> downPressed = false;
         }
-    }
-
-    private void hardDrop() {
-        // Dịch chuyển khối hiện tại xuống tận vị trí của bóng mờ (ghost)
-        current = board.getGhost(current);
-        moveDown(); // Gọi moveDown() để thực hiện logic khóa gạch, xóa hàng và phát âm thanh
-        resetLockDelay(); // Hồi lại 500ms
     }
 
     private void holdPiece() {

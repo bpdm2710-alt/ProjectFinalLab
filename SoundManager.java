@@ -3,8 +3,10 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -42,15 +44,15 @@ public class SoundManager {
     // ============================================================
     // FILE MAPPING — map key logic -> tên file thực tế trong thư mục Sound/
     // ============================================================
-    private static final Map<String, String> SOUND_FILE_BY_KEY = new HashMap<>();
+    private static final Map<String, List<String>> SOUND_FILES_BY_KEY = new HashMap<>();
     static {
-        SOUND_FILE_BY_KEY.put(MOVE, "touch floor.wav");
-        SOUND_FILE_BY_KEY.put(ROTATE, "rotation.wav");
-        SOUND_FILE_BY_KEY.put(PLACE, "touch floor.wav");
-        SOUND_FILE_BY_KEY.put(CLEAR, "delete line.wav");
-        SOUND_FILE_BY_KEY.put(TETRIS, "delete line.wav");
-        SOUND_FILE_BY_KEY.put(LEVEL_UP, "delete line.wav");
-        SOUND_FILE_BY_KEY.put(GAME_OVER, "gameover.wav");
+        SOUND_FILES_BY_KEY.put(MOVE, Arrays.asList("move.wav", "touch floor.wav"));
+        SOUND_FILES_BY_KEY.put(ROTATE, Arrays.asList("rotate.wav", "rotation.wav"));
+        SOUND_FILES_BY_KEY.put(PLACE, Arrays.asList("place.wav", "touch floor.wav"));
+        SOUND_FILES_BY_KEY.put(CLEAR, Arrays.asList("clear.wav", "delete line.wav"));
+        SOUND_FILES_BY_KEY.put(TETRIS, Arrays.asList("tetris.wav", "clear.wav", "delete line.wav"));
+        SOUND_FILES_BY_KEY.put(LEVEL_UP, Arrays.asList("levelup.wav", "level up.wav", "delete line.wav"));
+        SOUND_FILES_BY_KEY.put(GAME_OVER, Arrays.asList("gameover.wav"));
     }
 
     // ============================================================
@@ -68,6 +70,7 @@ public class SoundManager {
     private float bgmGainDb = -8.0f;
     private float sfxGainDb = -4.0f;
     private String bgmStatus = "Unavailable";
+    private final Map<String, String> resolvedSfxByKey = new HashMap<>();
 
     public static SoundManager getInstance() {
         if (instance == null) instance = new SoundManager();
@@ -82,7 +85,11 @@ public class SoundManager {
     public void play(String soundKey) {
         if (sfxMuted) return;
 
-        String fileName = SOUND_FILE_BY_KEY.getOrDefault(soundKey, soundKey + ".wav");
+        String fileName = resolveSfxFile(soundKey);
+        if (fileName == null) {
+            playSynthTone(soundKey);
+            return;
+        }
 
         try {
             Clip clip = AudioSystem.getClip();
@@ -108,6 +115,26 @@ public class SoundManager {
                  LineUnavailableException ex) {
             // Sound không critical — fail silently
         }
+    }
+
+    public int getAvailableSfxCount() {
+        int count = 0;
+        for (String key : SOUND_FILES_BY_KEY.keySet()) {
+            if (resolveSfxFile(key) != null) count++;
+        }
+        return count;
+    }
+
+    public Map<String, String> getSfxStatusMap() {
+        LinkedHashMap<String, String> status = new LinkedHashMap<>();
+        status.put("MOVE", getSfxSourceLabel(MOVE));
+        status.put("ROTATE", getSfxSourceLabel(ROTATE));
+        status.put("PLACE", getSfxSourceLabel(PLACE));
+        status.put("CLEAR", getSfxSourceLabel(CLEAR));
+        status.put("TETRIS", getSfxSourceLabel(TETRIS));
+        status.put("LEVEL", getSfxSourceLabel(LEVEL_UP));
+        status.put("GAME OVER", getSfxSourceLabel(GAME_OVER));
+        return status;
     }
 
     public void startBackgroundMusic() {
@@ -390,6 +417,118 @@ public class SoundManager {
     private double gainDbToLinear(float gainDb) {
         double linear = Math.pow(10.0, gainDb / 20.0);
         return Math.max(0.0, Math.min(1.0, linear));
+    }
+
+    private String resolveSfxFile(String soundKey) {
+        String cached = resolvedSfxByKey.get(soundKey);
+        if (cached != null && audioResourceExists(cached)) {
+            return cached;
+        }
+
+        List<String> candidates = SOUND_FILES_BY_KEY.get(soundKey);
+        if (candidates == null || candidates.isEmpty()) {
+            candidates = new ArrayList<>();
+            candidates.add(soundKey + ".wav");
+        }
+
+        for (String candidate : candidates) {
+            if (audioResourceExists(candidate)) {
+                resolvedSfxByKey.put(soundKey, candidate);
+                return candidate;
+            }
+        }
+
+        resolvedSfxByKey.remove(soundKey);
+        return null;
+    }
+
+    private String getSfxSourceLabel(String soundKey) {
+        String file = resolveSfxFile(soundKey);
+        if (file != null) return "FILE: " + file;
+        return "SYNTH";
+    }
+
+    private boolean audioResourceExists(String fileName) {
+        if (getClass().getResource("/Sound/" + fileName) != null) return true;
+        if (getClass().getResource("/sounds/" + fileName) != null) return true;
+
+        File fsUpper = new File("Sound", fileName);
+        if (fsUpper.exists()) return true;
+
+        File fsLower = new File("sounds", fileName);
+        return fsLower.exists();
+    }
+
+    private void playSynthTone(String soundKey) {
+        double frequency;
+        double durationSec;
+
+        switch (soundKey) {
+            case MOVE -> {
+                frequency = 620.0;
+                durationSec = 0.05;
+            }
+            case ROTATE -> {
+                frequency = 760.0;
+                durationSec = 0.06;
+            }
+            case PLACE -> {
+                frequency = 300.0;
+                durationSec = 0.07;
+            }
+            case CLEAR -> {
+                frequency = 520.0;
+                durationSec = 0.10;
+            }
+            case TETRIS -> {
+                frequency = 880.0;
+                durationSec = 0.16;
+            }
+            case LEVEL_UP -> {
+                frequency = 980.0;
+                durationSec = 0.20;
+            }
+            case GAME_OVER -> {
+                frequency = 180.0;
+                durationSec = 0.25;
+            }
+            default -> {
+                frequency = 500.0;
+                durationSec = 0.08;
+            }
+        }
+
+        int sampleRate = 22050;
+        int totalSamples = Math.max(1, (int) (sampleRate * durationSec));
+        byte[] pcm = new byte[totalSamples * 2];
+
+        for (int i = 0; i < totalSamples; i++) {
+            double t = (double) i / sampleRate;
+            double env = Math.max(0.0, 1.0 - (double) i / totalSamples);
+            short sample = (short) (Math.sin(2.0 * Math.PI * frequency * t) * env * 4000);
+            pcm[i * 2] = (byte) (sample & 0xFF);
+            pcm[i * 2 + 1] = (byte) ((sample >> 8) & 0xFF);
+        }
+
+        try {
+            AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, false);
+            AudioInputStream ais = new AudioInputStream(new ByteArrayInputStream(pcm), format, totalSamples);
+            Clip clip = AudioSystem.getClip();
+            clip.open(ais);
+            applyGain(clip, sfxGainDb);
+            clip.start();
+            clip.addLineListener(e -> {
+                if (e.getType() == LineEvent.Type.STOP) {
+                    clip.close();
+                    try {
+                        ais.close();
+                    } catch (IOException ignored) {
+                    }
+                }
+            });
+        } catch (LineUnavailableException | IOException ignored) {
+            // Nếu synth tone cũng fail thì bỏ qua vì sound không critical.
+        }
     }
 
     private File resolveFile(String fileName) {

@@ -118,7 +118,6 @@ public class Main {
             frame.getRootPane().getActionMap().put("exitFullscreen", exitFullscreenAction);
 
             gamePanel.requestFocusInWindow();
-            ctrl.start();
         });
     }
 }
